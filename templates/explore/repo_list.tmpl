@@ -17,7 +17,11 @@
 				</div>
 			</div>
 			{{if .DescriptionHTML}}<p class="has-emoji">{{.DescriptionHTML}}</p>{{end}}
-			<p class="time">{{$.i18n.Tr "org.repo_updated"}} {{TimeSince .Updated $.i18n.Lang}}</p>
+			<p class="time">{{$.i18n.Tr "org.repo_updated"}} {{TimeSince .Updated $.i18n.Lang}}
+			{{if .IsMirror}}
+				- {{$.i18n.Tr "repo.mirror_last_synced"}} {{TimeSince .Mirror.Updated $.i18n.Lang}}
+			{{end}}
+			</p>
 		</div>
 	{{else}}
 	<div>

@@ -127,6 +127,12 @@ func RenderRepoSearch(ctx *context.Context, opts *RepoSearchOptions) {
 			}
 		}
 	}
+
+	if err := models.MirrorRepositoryList(repos).LoadAttributes(); err != nil {
+		ctx.Handle(500, "MirrorRepositoryList.LoadAttributes", err)
+		return
+	}
+
 	ctx.Data["Keyword"] = keyword
 	ctx.Data["Total"] = count
 	ctx.Data["Page"] = paginater.New(int(count), opts.PageSize, page, 5)
