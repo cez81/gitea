@@ -147,6 +147,7 @@ func (m *Mirror) runSync() bool {
 		}
 		return false
 	}
+
 	if m.Repo.HasWiki() {
 		if _, stderr, err := process.GetManager().ExecDir(
 			timeout, wikiPath, fmt.Sprintf("Mirror.runSync: %s", wikiPath),
@@ -172,6 +173,26 @@ func getMirrorByRepoID(e Engine, repoID int64) (*Mirror, error) {
 		return nil, ErrMirrorNotExist
 	}
 	return m, nil
+}
+
+func getLatestCommitTime(m *Mirror) time.Time {
+	repoPath := m.Repo.RepoPath()
+
+	gitArgs := []string{"for-each-ref", "--sort=-committerdate", "refs/heads/", "--count", "1", "--format='%(committerdate:iso)'"}
+	output, stderr, err := process.GetManager().ExecDir(-1, repoPath, fmt.Sprintf("Mirror.lastestCommit: %s", repoPath), "git", gitArgs...)
+	if err != nil {
+		desc := fmt.Sprintf("Failed to fetch latest commit date'%s': %s", repoPath, stderr)
+		log.Error(4, desc)
+		if err = CreateRepositoryNotice(desc); err != nil {
+			log.Error(4, "Failed to fetch latest commit date: %v", err)
+		}
+	}
+
+	var t time.Time
+	fmt.Println(output)
+	t, _ = time.Parse("2006-01-02 15:04:05 -0700", output[1:26])
+	fmt.Println(t)
+	return t
 }
 
 // GetMirrorByRepoID returns mirror information of a repository.
@@ -238,6 +259,8 @@ func SyncMirrors() {
 		if !m.runSync() {
 			continue
 		}
+
+		getLatestCommitTime(m)
 
 		m.ScheduleNextUpdate()
 		if err = UpdateMirror(m); err != nil {
