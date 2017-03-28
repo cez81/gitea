@@ -35,6 +35,8 @@ type Mirror struct {
 	NextUpdate     time.Time `xorm:"-"`
 	NextUpdateUnix int64     `xorm:"INDEX"`
 
+	LatestCommitUnix int64   `xorm:"INDEX"`
+
 	address string `xorm:"-"`
 }
 
@@ -46,7 +48,7 @@ func (m *Mirror) BeforeInsert() {
 
 // BeforeUpdate is invoked from XORM before updating this object.
 func (m *Mirror) BeforeUpdate() {
-	m.UpdatedUnix = time.Now().Unix()
+	m.UpdatedUnix = m.Updated.Unix()
 	m.NextUpdateUnix = m.NextUpdate.Unix()
 }
 
@@ -175,23 +177,6 @@ func getMirrorByRepoID(e Engine, repoID int64) (*Mirror, error) {
 	return m, nil
 }
 
-func getLatestCommitTime(m *Mirror) time.Time {
-	repoPath := m.Repo.RepoPath()
-
-	gitArgs := []string{"for-each-ref", "--sort=-committerdate", "refs/heads/", "--count", "1", "--format='%(committerdate:iso)'"}
-	output, stderr, err := process.GetManager().ExecDir(-1, repoPath, fmt.Sprintf("Mirror.lastestCommit: %s", repoPath), "git", gitArgs...)
-	if err != nil {
-		desc := fmt.Sprintf("Failed to fetch latest commit date'%s': %s", repoPath, stderr)
-		log.Error(4, desc)
-		if err = CreateRepositoryNotice(desc); err != nil {
-			log.Error(4, "Failed to fetch latest commit date: %v", err)
-		}
-	}
-
-	t, _ := time.Parse("2006-01-02 15:04:05 -0700", output[1:26])
-	return t
-}
-
 // GetMirrorByRepoID returns mirror information of a repository.
 func GetMirrorByRepoID(repoID int64) (*Mirror, error) {
 	return getMirrorByRepoID(x, repoID)
@@ -257,9 +242,8 @@ func SyncMirrors() {
 			continue
 		}
 
-		t := getLatestCommitTime(m)
-		fmt.Println(t)
-		m.Repo.Updated = t
+		t := m.Repo.GetLatestCommitTime()
+		m.LatestCommitUnix = t.Unix()
 
 		m.ScheduleNextUpdate()
 		if err = UpdateMirror(m); err != nil {

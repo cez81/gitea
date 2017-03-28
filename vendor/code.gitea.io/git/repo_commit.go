@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mcuadros/go-version"
 )
@@ -367,4 +368,16 @@ func (repo *Repository) getCommitsBefore(id SHA1) (*list.List, error) {
 func (repo *Repository) getCommitsBeforeLimit(id SHA1, num int) (*list.List, error) {
 	l := list.New()
 	return l, repo.commitsBefore(l, nil, id, 1, num)
+}
+
+// GetLatestCommitTime returns time for latest commit in repository (across all branches)
+func GetLatestCommitTime(repoPath string) (time.Time, error) {
+	cmd := NewCommand("for-each-ref", "--sort=-committerdate", "refs/heads/", "--count", "1", "--format=%(committerdate)")
+	stdout, err := cmd.RunInDir(repoPath)
+	if err != nil {
+		return time.Time{}, err
+	}
+	commitTime := strings.TrimSpace(stdout)
+	t, _ := time.Parse("Mon Jan 02 15:04:05 2006 -0700", commitTime)
+	return t, nil
 }
