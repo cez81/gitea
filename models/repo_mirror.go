@@ -257,7 +257,9 @@ func SyncMirrors() {
 			continue
 		}
 
-		fmt.Println(getLatestCommitTime(m))
+		t := getLatestCommitTime(m)
+		fmt.Println(t)
+		m.Repo.Updated = t
 
 		m.ScheduleNextUpdate()
 		if err = UpdateMirror(m); err != nil {

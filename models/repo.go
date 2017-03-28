@@ -1769,6 +1769,24 @@ func GetPrivateRepositoryCount(u *User) (int64, error) {
 	return getPrivateRepositoryCount(x, u)
 }
 
+// GetLatestCommitTime returns time for latest commit in repository
+func GetLatestCommitTime(repo *Repository) time.Time {
+	repoPath := r.RepoPath()
+
+	gitArgs := []string{"for-each-ref", "--sort=-committerdate", "refs/heads/", "--count", "1", "--format='%(committerdate:iso)'"}
+	output, stderr, err := process.GetManager().ExecDir(-1, repoPath, fmt.Sprintf("Repo.GetLatestCommitTime: %s", repoPath), "git", gitArgs...)
+	if err != nil {
+		desc := fmt.Sprintf("Failed to fetch latest commit time'%s': %s", repoPath, stderr)
+		log.Error(4, desc)
+		if err = CreateRepositoryNotice(desc); err != nil {
+			log.Error(4, "Failed to fetch latest commit time: %v", err)
+		}
+	}
+
+	t, _ := time.Parse("2006-01-02 15:04:05 -0700", output[1:26])
+	return t
+}
+
 // DeleteRepositoryArchives deletes all repositories' archives.
 func DeleteRepositoryArchives() error {
 	return x.
