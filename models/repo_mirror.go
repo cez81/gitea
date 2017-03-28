@@ -188,10 +188,7 @@ func getLatestCommitTime(m *Mirror) time.Time {
 		}
 	}
 
-	var t time.Time
-	fmt.Println(output)
-	t, _ = time.Parse("2006-01-02 15:04:05 -0700", output[1:26])
-	fmt.Println(t)
+	t, _ := time.Parse("2006-01-02 15:04:05 -0700", output[1:26])
 	return t
 }
 
@@ -260,7 +257,7 @@ func SyncMirrors() {
 			continue
 		}
 
-		getLatestCommitTime(m)
+		fmt.Println(getLatestCommitTime(m))
 
 		m.ScheduleNextUpdate()
 		if err = UpdateMirror(m); err != nil {
